@@ -7,11 +7,11 @@ import (
 	"go-postgres-api/models"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 
 type response struct {
@@ -19,13 +19,25 @@ type response struct {
 	Message string `json:"message,omitempty"`
 }
 
+const (
+	host     = "localhost"
+	port     = 5432
+	user     = "postgres"
+	password = "showKEY"
+	dbname   = "stocksdb"
+)
+
 func createConnection() *sql.DB {
 	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
-	db, err := sql.Open("postgres", os.Getenv("POSTGRES_URL"))
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		host, port, user, password, dbname)
+
+	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
 		panic(err)
 	}
@@ -117,7 +129,7 @@ func DeleteStock(w http.ResponseWriter, r *http.Request) {
 	}
 
 	deletedRow := deleteStock(int64(id))
-	msg := fmt.Sprintf("stocks deleted successfully. total/Rows records deleted %v", deletedRow)
+	msg := fmt.Sprintf("stocks deleted successfully. total/rows records deleted %v", deletedRow)
 
 	res := response{
 		ID:      int64(id),
@@ -138,7 +150,7 @@ func insertStock(stock models.Stock) int64 {
 	if err != nil {
 		log.Fatalf("unable to execute query, Error: %v", err)
 	}
-	fmt.Printf("Inserted a single record, %d", id)
+	fmt.Printf("Inserted a single record, %d\n", id)
 
 	return id
 }
